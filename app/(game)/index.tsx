@@ -19,7 +19,8 @@ import Colors from '@/constants/colors';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CITY_WIDTH = SCREEN_WIDTH;
-const CITY_HEIGHT = CITY_WIDTH * 1.4;
+// Image is 896×1280 px → exact ratio = 1280/896 ≈ 1.4286
+const CITY_HEIGHT = CITY_WIDTH * (1280 / 896);
 
 const SLOT_POSITIONS: { x: number; y: number }[] = [
   { x: 0.50, y: 0.08 },
@@ -36,8 +37,13 @@ const SLOT_POSITIONS: { x: number; y: number }[] = [
   { x: 0.38, y: 0.73 },
 ];
 
+// Base size (px) of each building slot before perspective scaling
+const BASE_SLOT_SIZE = 64;
+
+// Perspective scale: buildings lower on screen appear larger (closer to viewer)
+// Range: 0.78 (top) → 1.08 (bottom) — subtle, realistic depth
 function getSlotScale(yNormalized: number): number {
-  return 0.7 + yNormalized * 0.55;
+  return 0.78 + yNormalized * 0.30;
 }
 
 interface BuildingData {
@@ -222,14 +228,14 @@ export default function GameHomeScreen() {
         <ImageBackground
           source={require('@/assets/images/city-background-new.png')}
           style={[styles.cityMap, { width: CITY_WIDTH, height: CITY_HEIGHT }]}
-          resizeMode="cover"
+          resizeMode="stretch"
         >
           <View style={styles.cityOverlay} />
           {sortedSlots.map(({ pos, index }) => {
             const building = getBuildingForSlot(index);
             const scale = getSlotScale(pos.y);
-            const slotW = Math.round(64 * scale);
-            const slotH = Math.round(64 * scale);
+            const slotW = Math.round(BASE_SLOT_SIZE * scale);
+            const slotH = Math.round(BASE_SLOT_SIZE * scale);
 
             return (
               <View
@@ -239,7 +245,8 @@ export default function GameHomeScreen() {
                   {
                     left: pos.x * CITY_WIDTH - slotW / 2,
                     top: pos.y * CITY_HEIGHT - slotH / 2,
-                    zIndex: Math.round(pos.y * 100),
+                    // Multiply by 1000 for finer depth ordering between close slots
+                    zIndex: Math.round(pos.y * 1000),
                   },
                 ]}
               >
